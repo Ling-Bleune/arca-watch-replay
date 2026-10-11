@@ -150,7 +150,7 @@
       *{box-sizing:border-box}button,input,select{font:inherit}button{cursor:pointer}button:disabled{opacity:.5;cursor:default}
       button,input,select{border:1px solid #49556a;border-radius:6px;padding:6px 9px;background:#252d3b;color:inherit}
       button:hover{background:#38445a}input{min-width:0}label{font-size:12px;color:#b7c3d6}a{color:#9bd0ff}
-      #launch{position:fixed;bottom:20px;left:20px;z-index:2147483645;display:flex;align-items:center;justify-content:center;width:46px;height:46px;border-radius:50%;padding:0;background:#606060;box-shadow:0 4px 20px #0006}
+      #launch{position:fixed;bottom:20px;left:20px;z-index:2147483645;display:flex;align-items:center;justify-content:center;width:46px;height:46px;border-radius:50%;padding:0;background:#1e1e1e;box-shadow:0 4px 20px #0006}
       #launch:hover{background:#737373}
       #launch svg{width:22px;height:22px;fill:currentColor}#launch:focus-visible{outline:2px solid #b7d7ff;outline-offset:3px}
       #overlay{position:fixed;inset:0;z-index:2147483646;background:var(--bg);display:flex;flex-direction:column}
