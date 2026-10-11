@@ -1,15 +1,15 @@
-// @updateURL    https://raw.githubusercontent.com/Ling-Bleune/arca-watch-replay/main/arca-watch-replay.user.js
-// @downloadURL  https://raw.githubusercontent.com/Ling-Bleune/arca-watch-replay/main/arca-watch-replay.user.js
-// @supportURL   https://github.com/Ling-Bleune/arca-watch-replay/issues
 // ==UserScript==
 // @name         아카라이브 같이 보기 다시 보기
 // @namespace    local.arca.watch-replay
-// @version      0.5.5
+// @version      0.5.6
 // @description  종료된 방의 YouTube 영상과 댓글을 같이 보기 화면으로 재생합니다.
 // @match        https://arca.live/b/*/*
 // @match        https://arca.live/r/*/*
 // @grant        none
 // @run-at       document-idle
+// @updateURL    https://raw.githubusercontent.com/Ling-Bleune/arca-watch-replay/main/arca-watch-replay.user.js
+// @downloadURL  https://raw.githubusercontent.com/Ling-Bleune/arca-watch-replay/main/arca-watch-replay.user.js
+// @supportURL   https://github.com/Ling-Bleune/arca-watch-replay/issues
 // ==/UserScript==
 
 (() => {
@@ -150,7 +150,8 @@
       *{box-sizing:border-box}button,input,select{font:inherit}button{cursor:pointer}button:disabled{opacity:.5;cursor:default}
       button,input,select{border:1px solid #49556a;border-radius:6px;padding:6px 9px;background:#252d3b;color:inherit}
       button:hover{background:#38445a}input{min-width:0}label{font-size:12px;color:#b7c3d6}a{color:#9bd0ff}
-      #launch{position:fixed;bottom:20px;right:20px;z-index:2147483645;background:#4262b8;box-shadow:0 4px 20px #0006;padding:10px 18px}
+      #launch{position:fixed;bottom:20px;left:20px;z-index:2147483645;display:flex;align-items:center;justify-content:center;width:46px;height:46px;border-radius:50%;padding:0;background:#4262b8;box-shadow:0 4px 20px #0006}
+      #launch svg{width:22px;height:22px;fill:currentColor}#launch:focus-visible{outline:2px solid #b7d7ff;outline-offset:3px}
       #overlay{position:fixed;inset:0;z-index:2147483646;background:var(--bg);display:flex;flex-direction:column}
       [hidden]{display:none!important}
       .layout{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 24rem}
@@ -176,7 +177,7 @@
       @media(max-width:991px){.layout{display:flex;flex-direction:column}.left{flex:none;height:48%;min-height:160px}.right{flex:1;min-height:100px;border-left:0;border-top:1px solid var(--line)}#video-box{min-height:130px}}
       @media(max-width:620px){.transport{padding:7px 10px}.settings{grid-template-columns:1fr}.settings .wide{grid-column:auto}}
     </style>
-    <button id="launch">▶ 같이 보기 다시 보기</button>
+    <button id="launch" aria-label="같이 보기 다시 보기" title="같이 보기 다시 보기"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button>
     <section id="overlay" hidden>
       <div id="settings" class="modal" role="dialog" aria-modal="true" aria-labelledby="settings-title" hidden>
         <div class="modal-card">
