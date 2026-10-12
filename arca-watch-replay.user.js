@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         아카라이브 같이 보기 다시 보기
 // @namespace    local.arca.watch-replay
-// @version      0.5.8
+// @version      0.5.9
 // @description  종료된 방의 YouTube 영상과 댓글을 같이 보기 화면으로 재생합니다.
 // @match        https://arca.live/b/*/*
 // @match        https://arca.live/r/*/*
@@ -20,7 +20,8 @@
   const articleURL = new URL(articlePath, location.origin);
   const CACHE_PREFIX = 'arca-watch-replay-v2:', CACHE_TTL = 24*60*60*1000;
   const storageKey = `${CACHE_PREFIX}${articlePath}`;
-  let cacheTouchedAt = Date.now();
+  // 기존 저장 형식의 필드명은 유지하며, 다시 보기 시청 시각만 기록합니다.
+  let cacheTouchedAt = 0;
   const comments = new Map();
   let ordered = [], start = NaN, offset = 0, elapsed = 0, rate = 1;
   let playing = false, anchor = performance.now(), player = null, ready = false;
@@ -267,13 +268,13 @@
         if (!data.comments.length && !data.pages?.length) continue;
         if (Number.isFinite(data.cacheTouchedAt) && now-data.cacheTouchedAt<CACHE_TTL) continue;
         // 시각이 없는 구버전 캐시도 정리하되 영상·싱크 설정은 유지합니다.
-        localStorage.setItem(key,JSON.stringify({...data,comments:[],pages:[],cacheTouchedAt:now}));
-        if (key === storageKey) { comments.clear(); pageCache.clear(); ordered = []; cacheTouchedAt = now; refresh(); }
+        localStorage.setItem(key,JSON.stringify({...data,comments:[],pages:[]}));
+        if (key === storageKey) { comments.clear(); pageCache.clear(); ordered = []; refresh(); }
       }
     } catch { /* 저장 접근 제한이 있으면 현재 메모리의 채팅은 유지합니다. */ }
   }
   function save() {
-    cacheTouchedAt = Date.now();
+    if (opened) cacheTouchedAt = Date.now();
     const value = JSON.stringify(exportData());
     try { localStorage.setItem(storageKey,value); }
     catch(e) {
@@ -589,20 +590,22 @@
       const media = Array.isArray(c.media) ? c.media.slice(0,20).map(m => ({type:m?.type,src:safeMedia(m?.src,articleURL),poster:safeMedia(m?.poster,articleURL)})).filter(m => ['image','video'].includes(m.type) && m.src) : [];
       return {id:c.id,at:c.at,author:c.author,identity:typeof c.identity === 'string' ? c.identity : c.author,text:c.text,media,missingMedia:!!c.missingMedia};
     });
-    return {comments:clean,offset:data.syncReference === 'end' && Number.isFinite(data.offset) ? data.offset : 0,url:youtubeID(data.url) ? data.url : '',endAt:data.syncReference === 'end' && Number.isFinite(data.endAt) && Number.isFinite(new Date(data.endAt).getTime()) ? data.endAt : NaN,manualEnd:data.syncReference === 'end' && !!data.manualEnd,endPreference:data.endPreference === 'last-comment' ? 'last-comment' : 'modified',durationHint:Number.isFinite(data.durationHint) && data.durationHint>0 ? data.durationHint : 0,pages:data.pages,maxPage:data.maxPage};
+    return {cacheTouchedAt:Number.isFinite(data.cacheTouchedAt) && data.cacheTouchedAt>=0 ? data.cacheTouchedAt : 0,comments:clean,offset:data.syncReference === 'end' && Number.isFinite(data.offset) ? data.offset : 0,url:youtubeID(data.url) ? data.url : '',endAt:data.syncReference === 'end' && Number.isFinite(data.endAt) && Number.isFinite(new Date(data.endAt).getTime()) ? data.endAt : NaN,manualEnd:data.syncReference === 'end' && !!data.manualEnd,endPreference:data.endPreference === 'last-comment' ? 'last-comment' : 'modified',durationHint:Number.isFinite(data.durationHint) && data.durationHint>0 ? data.durationHint : 0,pages:data.pages,maxPage:data.maxPage};
   }
   function open() {
     if (opened) return;
     opened = true; previousOverflow = document.documentElement.style.overflow; document.documentElement.style.overflow = 'hidden';
+    cacheTouchedAt = Date.now();
     $('overlay').hidden = false; $('launch').hidden = true; anchor = performance.now();
     if (!player && youtubeID($('url').value)) loadVideo();
     else if (!youtubeID($('url').value)) { showSettings(); status('영상 주소를 찾지 못했습니다. YouTube 주소를 입력하세요.'); }
     retryAt = 0; ensureBuffer();
-    render();
+    render(); save();
   }
   function close() {
     if (!opened) return;
     snapshot(); playing = false; if (ready) player.pauseVideo();
+    cacheTouchedAt = Date.now();
     opened = false; $('overlay').hidden = true; $('launch').hidden = false;
     seekPending = false; setBuffer('');
     hideSettings();
@@ -675,12 +678,12 @@
   cleanupCaches();
   try {
     const saved = localStorage.getItem(storageKey);
-    if (saved) { const data = validate(JSON.parse(saved)); data.comments.forEach(c => comments.set(c.id,c)); endAt = data.endAt; manualEnd = data.manualEnd; endPreference = data.endPreference; durationHint = data.durationHint; offset = data.offset; $('url').value = data.url; $('offset').value = offset; restorePages(data); }
+    if (saved) { const data = validate(JSON.parse(saved)); cacheTouchedAt = data.cacheTouchedAt; data.comments.forEach(c => comments.set(c.id,c)); endAt = data.endAt; manualEnd = data.manualEnd; endPreference = data.endPreference; durationHint = data.durationHint; offset = data.offset; $('url').value = data.url; $('offset').value = offset; restorePages(data); }
   } catch { status('이전에 저장한 데이터를 읽지 못했습니다.'); }
   // 페이지의 댓글은 기본 정렬이나 AJAX 갱신으로 URL의 cp와 다를 수 있습니다.
   // 즉시 표시용으로 읽되, 정규화한 cp 요청 응답만 페이지 탐색 캐시로 씁니다.
   absorb(document,location.href); save();
   setInterval(() => { if (opened) { snapshot(); render(); ensureBuffer(); } },200);
   setInterval(() => { if (opened || collection) save(); cleanupCaches(); },60000);
-  window.addEventListener('pagehide',() => { collection?.abort(); bufferJob?.controller.abort(); chatResize.disconnect(); if (objectURL) URL.revokeObjectURL(objectURL); });
+  window.addEventListener('pagehide',() => { if (opened) save(); collection?.abort(); bufferJob?.controller.abort(); chatResize.disconnect(); if (objectURL) URL.revokeObjectURL(objectURL); });
 })();
